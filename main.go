@@ -7,6 +7,8 @@ import (
 	"os"
 
 	"github.com/Alok-Raturi/go/event-application/config"
+	"github.com/Alok-Raturi/go/event-application/internal/user"
+	"github.com/Alok-Raturi/go/event-application/router"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -42,10 +44,11 @@ func main() {
 		db:     db,
 	}
 
-	
+	userRepo := user.NewUserRepository(db)
+	userSvc := user.NewUserService(userRepo)
+	userHandler := user.NewHandler(userSvc)
 
-	mux := http.NewServeMux()
-	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", mux))
+	mux := router.NewRouter(userHandler)
 
 	app.logger.Println("Server started on port", config.Port)
 	err = http.ListenAndServe(":"+config.Port, mux)
