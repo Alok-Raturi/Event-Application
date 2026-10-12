@@ -2,11 +2,13 @@ package user
 
 import (
 	"database/sql"
+	"errors"
 )
 
 type UserRepository interface {
 	GetUsers() ([]User, error)
 	CreateUser(user *User) error
+	GetUserByEmail(email string) (*User, error)
 }
 
 type userRepository struct {
@@ -44,6 +46,19 @@ func (r *userRepository) GetUsers() ([]User, error) {
 }
 
 func (r *userRepository) CreateUser(user *User) error {
-	_, err := r.db.Exec("INSERT INTO user (id, name, email, password_hash, created_at) VALUES ($1, $2, $3, $4, $5)", user.ID, user.Name, user.Email, user.PasswordHash, user.CreatedAt)
+	_, err := r.db.Exec("INSERT INTO users (id, name, email, password_hash, created_at) VALUES ($1, $2, $3, $4, $5)", user.ID, user.Name, user.Email, user.PasswordHash, user.CreatedAt)
 	return err
+}
+
+func (r *userRepository) GetUserByEmail(email string) (*User, error) {
+	row := r.db.QueryRow("Select id, email, name, password_hash, created_at FROM users WHERE email = $1", email)
+	var u User
+	err := row.Scan(&u.ID, &u.Email, &u.Name, &u.PasswordHash, &u.CreatedAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil // No user found with the given email
+		}
+		return nil, err
+	}
+	return &u, nil
 }

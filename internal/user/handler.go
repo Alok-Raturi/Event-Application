@@ -27,15 +27,16 @@ func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
-	var user User
-	err := json.NewDecoder(r.Body).Decode(&user)
+	var userReq UserRequest
+	err := json.NewDecoder(r.Body).Decode(&userReq)
+
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Invalid request payload"))
 		return
 	}
 
-	err = h.userSvc.CreateUser(&user)
+	err = h.userSvc.CreateUser(&userReq)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("Error creating user"))

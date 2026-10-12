@@ -38,6 +38,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("Error initializing database:", err)
 	}
+	logger.Printf("Postgres started")
 	defer db.Close()
 	app := &application{
 		logger: logger,
