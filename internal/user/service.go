@@ -37,6 +37,9 @@ func (s *UserService) CreateUser(userRequest *UserRequest) error {
 		return errors.New("password must be between 6 and 72 characters")
 	}
 
+	userRequest.Email = strings.TrimSpace(userRequest.Email)
+	userRequest.Name = strings.TrimSpace(userRequest.Name)
+
 	existingUser, err := s.userRepo.GetUserByEmail(userRequest.Email)
 	if err != nil {
 		return errors.New("error checking existing user: " + err.Error())
@@ -55,8 +58,8 @@ func (s *UserService) CreateUser(userRequest *UserRequest) error {
 
 	user := &User{
 		ID:           id,
-		Name:         strings.TrimSpace(userRequest.Name),
-		Email:        strings.TrimSpace(userRequest.Email),
+		Name:         userRequest.Name,
+		Email:        userRequest.Email,
 		PasswordHash: hashedPassword,
 		CreatedAt:    time.Now(),
 	}

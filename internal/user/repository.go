@@ -51,9 +51,9 @@ func (r *userRepository) CreateUser(user *User) error {
 }
 
 func (r *userRepository) GetUserByEmail(email string) (*User, error) {
-	row := r.db.QueryRow("Select id, email, name, password_hash, created_at FROM users WHERE email = $1", email)
+	row := r.db.QueryRow("Select id, name, email, password_hash, created_at FROM users WHERE email = $1", email)
 	var u User
-	err := row.Scan(&u.ID, &u.Email, &u.Name, &u.PasswordHash, &u.CreatedAt)
+	err := row.Scan(&u.ID, &u.Name, &u.Email, &u.PasswordHash, &u.CreatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil // No user found with the given email

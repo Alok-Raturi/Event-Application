@@ -39,7 +39,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	err = h.userSvc.CreateUser(&userReq)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Error creating user"))
+		w.Write([]byte("Error creating user: " + err.Error()))
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
