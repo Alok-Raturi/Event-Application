@@ -1,7 +1,6 @@
 package user
 
 import (
-	"errors"
 	"strings"
 	"time"
 
@@ -21,37 +20,34 @@ func NewUserService(userRepo UserRepository) *UserService {
 }
 
 func (s *UserService) GetUsers() ([]User, error) {
-	users, err := s.userRepo.GetUsers()
-	if err != nil {
-		return nil, err
-	}
-	return users, nil
+	return s.userRepo.GetUsers()
 }
 
 func (s *UserService) CreateUser(userRequest *UserRequest) error {
-	if strings.TrimSpace(userRequest.Name) == "" || strings.TrimSpace(userRequest.Email) == "" {
-		return errors.New("name and email cannot be empty")
-	}
-
-	if userRequest.Password == "" || len(userRequest.Password) < 6 || len(userRequest.Password) > 72 {
-		return errors.New("password must be between 6 and 72 characters")
-	}
 
 	userRequest.Email = strings.TrimSpace(userRequest.Email)
 	userRequest.Name = strings.TrimSpace(userRequest.Name)
 
+	if userRequest.Name == "" || userRequest.Email == "" {
+		return ErrInvalidInput
+	}
+
+	if userRequest.Password == "" || len(userRequest.Password) < 6 || len(userRequest.Password) > 72 {
+		return ErrInvalidInput
+	}
+
 	existingUser, err := s.userRepo.GetUserByEmail(userRequest.Email)
 	if err != nil {
-		return errors.New("error checking existing user: " + err.Error())
+		return err
 	}
 	if existingUser != nil {
-		return errors.New("user with this email already exists")
+		return ErrEmailAlreadyExists
 	}
 	id, err := uuid.NewV7()
 	if err != nil {
 		return err
 	}
-	hashedPassword, err := hashpassword(userRequest.Password)
+	hashedPassword, err := hashPassword(userRequest.Password)
 	if err != nil {
 		return err
 	}
@@ -67,7 +63,7 @@ func (s *UserService) CreateUser(userRequest *UserRequest) error {
 	return err
 }
 
-func hashpassword(password string) (string, error) {
+func hashPassword(password string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err

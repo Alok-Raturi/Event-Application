@@ -2,6 +2,7 @@ package user
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 )
 
@@ -18,12 +19,15 @@ func NewHandler(userSvc *UserService) *UserHandler {
 func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := h.userSvc.GetUsers()
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Error fetching users"))
+		http.Error(w, "Internal Server Error ", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+	err = json.NewEncoder(w).Encode(users)
+	if err != nil {
+		http.Error(w, "Internal Server Error ", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -31,16 +35,27 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&userReq)
 
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Invalid request payload"))
+		http.Error(w, ErrInvalidInput.Error(), http.StatusBadRequest)
 		return
 	}
 
 	err = h.userSvc.CreateUser(&userReq)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Error creating user: " + err.Error()))
-		return
+		switch {
+		case errors.Is(err, ErrInvalidInput):
+			{
+				http.Error(w, ErrInvalidInput.Error(), http.StatusBadRequest)
+				return
+			}
+		case errors.Is(err, ErrEmailAlreadyExists):
+			{
+				http.Error(w, ErrEmailAlreadyExists.Error(), http.StatusConflict)
+				return
+			}
+		default:
+			http.Error(w, "Error creating user: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusCreated)
 }
