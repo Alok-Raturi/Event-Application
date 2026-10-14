@@ -23,11 +23,18 @@ func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(users)
-	if err != nil {
-		http.Error(w, "Internal Server Error ", http.StatusInternalServerError)
-		return
+
+	userResponses := make([]UserResponse, len(users))
+	for i, user := range users {
+		userResponses[i] = UserResponse{
+			ID:        user.ID.String(),
+			Name:      user.Name,
+			Email:     user.Email,
+			CreatedAt: user.CreatedAt,
+		}
 	}
+
+	err = json.NewEncoder(w).Encode(userResponses)
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -57,5 +64,5 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusAccepted)
 }
