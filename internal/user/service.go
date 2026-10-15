@@ -23,33 +23,33 @@ func (s *UserService) GetUsers() ([]User, error) {
 	return s.userRepo.GetUsers()
 }
 
-func (s *UserService) CreateUser(userRequest *UserRequest) error {
+func (s *UserService) CreateUser(userRequest *UserRequest) (*User, error) {
 
 	userRequest.Email = strings.TrimSpace(userRequest.Email)
 	userRequest.Name = strings.TrimSpace(userRequest.Name)
 
 	if userRequest.Name == "" || userRequest.Email == "" {
-		return ErrInvalidInput
+		return nil, ErrInvalidInput
 	}
 
 	if userRequest.Password == "" || len(userRequest.Password) < 6 || len(userRequest.Password) > 72 {
-		return ErrInvalidInput
+		return nil, ErrInvalidInput
 	}
 
 	existingUser, err := s.userRepo.GetUserByEmail(userRequest.Email)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if existingUser != nil {
-		return ErrEmailAlreadyExists
+		return nil, ErrEmailAlreadyExists
 	}
 	id, err := uuid.NewV7()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	hashedPassword, err := hashPassword(userRequest.Password)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	user := &User{
@@ -60,7 +60,10 @@ func (s *UserService) CreateUser(userRequest *UserRequest) error {
 		CreatedAt:    time.Now(),
 	}
 	err = s.userRepo.CreateUser(user)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 func hashPassword(password string) (string, error) {

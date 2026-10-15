@@ -19,7 +19,7 @@ func NewHandler(userSvc *UserService) *UserHandler {
 func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := h.userSvc.GetUsers()
 	if err != nil {
-		http.Error(w, "Internal Server Error ", http.StatusInternalServerError)
+		WriteErrorResponse(w, http.StatusInternalServerError, "Internal Server Error", "INTERNAL_SERVER_ERROR")
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -36,7 +36,6 @@ func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(userResponses)
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 }
@@ -46,27 +45,37 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&userReq)
 
 	if err != nil {
-		http.Error(w, ErrInvalidInput.Error(), http.StatusBadRequest)
+		WriteErrorResponse(w, http.StatusBadRequest, "Invalid Inputs provided", "INVALID_INPUT")
 		return
 	}
 
-	err = h.userSvc.CreateUser(&userReq)
+	user, err := h.userSvc.CreateUser(&userReq)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrInvalidInput):
 			{
-				http.Error(w, ErrInvalidInput.Error(), http.StatusBadRequest)
+				WriteErrorResponse(w, http.StatusBadRequest, "Invalid Inputs provided", "INVALID_INPUT")
 				return
 			}
 		case errors.Is(err, ErrEmailAlreadyExists):
 			{
-				http.Error(w, ErrEmailAlreadyExists.Error(), http.StatusConflict)
+				WriteErrorResponse(w, http.StatusConflict, "Email already exist", "EMAIL_ALREADY_EXIST")
 				return
 			}
 		default:
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			WriteErrorResponse(w, http.StatusInternalServerError, "Internal Server Error", "INTERNAL_SERVER_ERROR")
 			return
 		}
 	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	err = json.NewEncoder(w).Encode(UserResponse{
+		ID:        user.ID.String(),
+		Name:      user.Name,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt,
+	})
+	if err != nil {
+		return
+	}
 }
