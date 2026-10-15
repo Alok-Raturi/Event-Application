@@ -47,7 +47,7 @@ func main() {
 
 	userRepo := user.NewUserRepository(db)
 	userSvc := user.NewUserService(userRepo)
-	userHandler := user.NewHandler(userSvc)
+	userHandler := user.NewHandler(userSvc, app.logger)
 
 	mux := router.NewRouter(userHandler)
 

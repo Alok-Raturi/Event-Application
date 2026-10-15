@@ -3,16 +3,19 @@ package user
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 )
 
 type UserHandler struct {
 	userSvc *UserService
+	logger  *log.Logger
 }
 
-func NewHandler(userSvc *UserService) *UserHandler {
+func NewHandler(userSvc *UserService, logger *log.Logger) *UserHandler {
 	return &UserHandler{
 		userSvc: userSvc,
+		logger:  logger,
 	}
 }
 
@@ -34,9 +37,9 @@ func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = json.NewEncoder(w).Encode(userResponses)
+	err = WriteJsonResponse(w, userResponses, http.StatusOK)
 	if err != nil {
-		return
+		WriteErrorResponse(w, http.StatusInternalServerError, "Internal Server Error", "INTERNAL_SERVER_ERROR")
 	}
 }
 
@@ -59,7 +62,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 			}
 		case errors.Is(err, ErrEmailAlreadyExists):
 			{
-				WriteErrorResponse(w, http.StatusConflict, "Email already exist", "EMAIL_ALREADY_EXIST")
+				WriteErrorResponse(w, http.StatusConflict, "Email already exist", "EMAIL_ALREADY_EXISTS")
 				return
 			}
 		default:
@@ -69,13 +72,16 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	err = json.NewEncoder(w).Encode(UserResponse{
+
+	createdUser := &UserResponse{
 		ID:        user.ID.String(),
 		Name:      user.Name,
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt,
-	})
+	}
+
+	err = WriteJsonResponse(w, createdUser, http.StatusCreated)
 	if err != nil {
-		return
+		WriteErrorResponse(w, http.StatusInternalServerError, "Internal Server Error", "INTERNAL_SERVER_ERROR")
 	}
 }
