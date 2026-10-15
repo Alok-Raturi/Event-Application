@@ -38,9 +38,15 @@ func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = WriteJsonResponse(w, userResponses, http.StatusOK)
-	if err != nil {
+	if errors.Is(err, ErrJsonEncodingError) {
+		h.logger.Printf("Error in encoding json")
+		WriteErrorResponse(w, http.StatusInternalServerError, "Json encoding error", "JSON_ENCODING_ERROR")
+	}
+	if errors.Is(err, ErrResponseClientError) {
+		h.logger.Printf("Error writing response")
 		WriteErrorResponse(w, http.StatusInternalServerError, "Internal Server Error", "INTERNAL_SERVER_ERROR")
 	}
+
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -70,8 +76,6 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
 
 	createdUser := &UserResponse{
 		ID:        user.ID.String(),
@@ -81,7 +85,12 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = WriteJsonResponse(w, createdUser, http.StatusCreated)
-	if err != nil {
+	if errors.Is(err, ErrJsonEncodingError) {
+		h.logger.Printf("Error in encoding json")
+		WriteErrorResponse(w, http.StatusInternalServerError, "Json encoding error", "JSON_ENCODING_ERROR")
+	}
+	if errors.Is(err, ErrResponseClientError) {
+		h.logger.Printf("Error writing response")
 		WriteErrorResponse(w, http.StatusInternalServerError, "Internal Server Error", "INTERNAL_SERVER_ERROR")
 	}
 }

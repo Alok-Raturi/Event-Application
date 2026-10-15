@@ -11,7 +11,7 @@ type APIError struct {
 	Code    string `json:"code"`
 }
 
-func WriteErrorResponse(w http.ResponseWriter, statusCode int, message string, code string) {
+func WriteErrorResponse(w http.ResponseWriter, statusCode int, message string, code string) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
@@ -19,7 +19,22 @@ func WriteErrorResponse(w http.ResponseWriter, statusCode int, message string, c
 		Code:    code,
 		Message: message,
 	}
-	_ = json.NewEncoder(w).Encode(apiError)
+
+	var buf bytes.Buffer
+
+	err := json.NewEncoder(&buf).Encode(apiError)
+
+	if err != nil {
+		return ErrJsonEncodingError
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	_, err = w.Write(buf.Bytes())
+	if err != nil {
+		return ErrResponseClientError
+	}
+	return nil
 }
 
 func WriteJsonResponse(w http.ResponseWriter, data any, statusCode int) error {
@@ -28,11 +43,14 @@ func WriteJsonResponse(w http.ResponseWriter, data any, statusCode int) error {
 	err := json.NewEncoder(&buf).Encode(data)
 
 	if err != nil {
-		return err
+		return ErrJsonEncodingError
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	_, err = w.Write(buf.Bytes())
-	return err
+	if err != nil {
+		return ErrResponseClientError
+	}
+	return nil
 }
